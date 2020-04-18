@@ -10,6 +10,9 @@ SERVER_IP = '127.0.0.1'
 SERVER_PORT = 10080
 
 class HTTPHandler:
+	"""
+	Handles HTTP Requests and Responses
+	"""
 	server_socket = socket(AF_INET, SOCK_STREAM)
 	server_socket.bind((SERVER_IP, SERVER_PORT))
 	server_socket.listen(1)
@@ -28,7 +31,6 @@ class HTTPHandler:
 			conn.close()
 			return False
 
-		print(request)
 		decoded_request = request.decode()
 		logging.info(f"{datetime.now()} : {client_address} - {decoded_request}")
 
@@ -41,7 +43,6 @@ class HTTPHandler:
 		headers['Resource Name'] = request_line[1]
 		headers['HTTP Standard'] = request_line[2].strip()
 
-		print(headers)
 		#index = read_text('index.html')
 
 		#response = "HTTP/1.0 200 OK\n\n" + index
@@ -54,14 +55,23 @@ class HTTPHandler:
 	def __get_response(self, code, body):
 		return f"HTTP/1.0 {code}\n\n{body}"
 
+	def __read_bytes(self, file_name):
+		return Path('./public/' + file_name).read_bytes()
+
 	def __read_text(self, file_name):
 		return Path('./public/' + file_name).read_text()
 
 	def get(self, request):
-		print(request)
+		resource = 'index.html' if request['Resource Name'] == '/' else request['Resource Name']
 
-		body = self.__read_text('index.html' if request['Resource Name'] == '/' else request['Resource Name'])
-		response = self.__get_response('200 OK', body)
+		if 'text' in request['Accept']:
+			body = self.__read_text(resource)
+			response = self.__get_response('200 OK', body)
+		else:
+			data = self.__read_bytes(resource)
+			response = f"HTTP/1.0 200 OK\nContent-Type: image/x-icon\nContent-Length: {len(data)}\n\n{data}"
+
+		print(response)
 		return response
 
 	def post(self, request):
