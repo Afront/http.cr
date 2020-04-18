@@ -1,5 +1,6 @@
 from socket import *
 from datetime import datetime
+from pathlib import Path
 import logging
 import signal
 import sys
@@ -10,6 +11,9 @@ MAX = 100
 def handler(signal_received, frame):
 	print("Goodbye!")
 	sys.exit(0)
+
+def read_text(file_name):
+	return Path('./public/' + file_name).read_text()
 
 signal.signal(signal.SIGINT, handler)
 
@@ -36,7 +40,10 @@ while True:
 		decoded_request = request.decode()
 		logging.info(f"{datetime.now()}: {clientAddress} - {decoded_request}")
 
-		response = "HTTP/1.0 200 OK\n\nHello World!"
+		index = read_text('index.html')
+
+		response = "HTTP/1.0 200 OK\n\n" + index
+		print(response)
 		conn.send(response.encode())
 #		conn.close()
 
