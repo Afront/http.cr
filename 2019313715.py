@@ -21,8 +21,8 @@ class HTTPResponse:
 		self.is_text = 'text' in content_type
 
 	def __get_response(self, body):
-		content_length = f"Content-Length: {len(body)}" if not self.is_text else None
-		return f"HTTP/1.0 {self.http_standard}\nContent-Type: {self.content_type}\n{content_length}\n\n{body}"
+		content_length = f"Content-Length: {len(body)}" if not self.is_text else ''
+		return f"{self.http_standard}\nContent-Type: {self.content_type}\n{content_length}\n\n{body}"
 
 	def __read_bytes(self, file_name):
 		return Path('./public/' + file_name).read_bytes()
