@@ -20,9 +20,9 @@ class HTTPResponse:
 		self.content_type = content_type
 		self.is_text = 'text' in content_type
 
-	def __get_response(self, body):
+	def __get_response(self, body, code):
 		content_length = f"Content-Length: {len(body)}" if not self.is_text else ''
-		return f"{self.http_standard}\nContent-Type: {self.content_type}\n{content_length}\n\n{body}"
+		return f"{self.http_standard}# {code}\nContent-Type: {self.content_type}\n{content_length}\n\n{body}"
 
 	def __read_bytes(self, file_name):
 		return Path('./public/' + file_name).read_bytes()
@@ -33,8 +33,16 @@ class HTTPResponse:
 	def __read_file(self, file_name):
 		return self.__read_text(file_name) if self.is_text else self.__read_bytes(file_name)
 
+	def __return_404_body(self):
+		return self.__read_file('404.html')
+
 	def to_s(self):
-		return self.__get_response(self.__read_file(self.resource))
+		try:
+			response = self.__get_response(self.__read_file(self.resource), '200 OK')
+		except FileNotFoundError:
+			response = self.__get_response(self.__return_404_body(), '404 Not Found')
+		finally:
+			return response
 
 
 class HTTPHandler:
@@ -71,10 +79,6 @@ class HTTPHandler:
 		headers['Resource Name'] = request_line[1]
 		headers['HTTP Standard'] = request_line[2].strip()
 
-		#index = read_text('index.html')
-
-		#response = "HTTP/1.0 200 OK\n\n" + index
-
 		response = getattr(self, headers['Request Type'].lower())(headers)
 		
 		conn.sendall(response.encode())
@@ -84,6 +88,7 @@ class HTTPHandler:
 		resource = 'index.html' if request['Resource Name'] == '/' else request['Resource Name']
 		content_type = request['Accept'].split(',')[0]
 		response = HTTPResponse(resource, content_type)
+		print("hi")
 		return response.to_s()
 
 	def post(self, request):
