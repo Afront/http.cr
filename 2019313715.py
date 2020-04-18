@@ -9,6 +9,34 @@ BUFFER_SIZE = 2048
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 10080
 
+class HTTPResponse:
+	"""
+	Abstraction for the HTTP Response
+	Allows building HTTP responses easily
+	"""
+	def __init__(self, resource_name, content_type):
+		self.http_standard = 'HTTP/1.0'
+		self.resource = resource_name
+		self.content_type = content_type
+		self.is_text = 'text' in content_type
+
+	def __get_response(self, body):
+		content_length = f"Content-Length: {len(body)}" if not self.is_text else None
+		return f"HTTP/1.0 {self.http_standard}\nContent-Type: {self.content_type}\n{content_length}\n\n{body}"
+
+	def __read_bytes(self, file_name):
+		return Path('./public/' + file_name).read_bytes()
+
+	def __read_text(self, file_name):
+		return Path('./public/' + file_name).read_text()
+
+	def __read_file(self, file_name):
+		return self.__read_text(file_name) if self.is_text else self.__read_bytes(file_name)
+
+	def to_s(self):
+		return self.__get_response(self.__read_file(self.resource))
+
+
 class HTTPHandler:
 	"""
 	Handles HTTP Requests and Responses
@@ -52,32 +80,14 @@ class HTTPHandler:
 		conn.sendall(response.encode())
 		return True
 
-	def __get_response(self, code, body):
-		return f"HTTP/1.0 {code}\n\n{body}"
-
-	def __read_bytes(self, file_name):
-		return Path('./public/' + file_name).read_bytes()
-
-	def __read_text(self, file_name):
-		return Path('./public/' + file_name).read_text()
-
 	def get(self, request):
 		resource = 'index.html' if request['Resource Name'] == '/' else request['Resource Name']
-
-		if 'text' in request['Accept']:
-			body = self.__read_text(resource)
-			response = self.__get_response('200 OK', body)
-		else:
-			data = self.__read_bytes(resource)
-			response = f"HTTP/1.0 200 OK\nContent-Type: image/x-icon\nContent-Length: {len(data)}\n\n{data}"
-
-		print(response)
-		return response
+		content_type = request['Accept'].split(',')[0]
+		response = HTTPResponse(resource, content_type)
+		return response.to_s()
 
 	def post(self, request):
 		pass
-
-
 
 def sigint_handler(signal_received, frame):
 	print("Goodbye!")
