@@ -17,7 +17,7 @@ class HTTPHandler:
 	def __init__(self):
 		super(HTTPHandler, self).__init__()
 
-	def close_connection(self):
+	def close(self):
 		self.server_socket.close()
 
 	def handle(self):
@@ -30,19 +30,42 @@ class HTTPHandler:
 
 		print(request)
 		decoded_request = request.decode()
-		logging.info(f"{datetime.now()}: {client_address} - {decoded_request}")
+		logging.info(f"{datetime.now()} : {client_address} - {decoded_request}")
 
-		index = read_text('index.html')
+		request_list = decoded_request.strip().split('\n')
 
-		response = "HTTP/1.0 200 OK\n\n" + index
+		headers = dict(header_field.strip().split(':', 1) for header_field in request_list[1:-1])
 
-		print(request.split())
+		request_line = request_list[0].split()
+		headers['Request Type'] = request_line[0].strip()
+		headers['Resource Name'] = request_line[1]
+		headers['HTTP Standard'] = request_line[2].strip()
+
+		print(headers)
+		#index = read_text('index.html')
+
+		#response = "HTTP/1.0 200 OK\n\n" + index
+
+		response = getattr(self, headers['Request Type'].lower())(headers)
+		
 		conn.sendall(response.encode())
 		return True
 
-def read_text(file_name):
-	return Path('./public/' + file_name).read_text()
+	def __get_response(self, code, body):
+		return f"HTTP/1.0 {code}\n\n{body}"
 
+	def __read_text(self, file_name):
+		return Path('./public/' + file_name).read_text()
+
+	def get(self, request):
+		print(request)
+
+		body = self.__read_text('index.html' if request['Resource Name'] == '/' else request['Resource Name'])
+		response = self.__get_response('200 OK', body)
+		return response
+
+	def post(self, request):
+		pass
 
 
 
